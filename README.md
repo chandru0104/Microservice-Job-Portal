@@ -1,267 +1,221 @@
-Analyzed apollo-pharmacy-microservices-project.md:L101-250
-Analyzed apollo-pharmacy-microservices-project.md:L251-360
-Analyzed apollo-pharmacy-microservices-project.md:L361-450
-Ran list ai-service src
-Analyzed aiService.ts:L1-60
-Analyzed aiService.ts:L61-140
-Analyzed aiService.ts:L141-216
-
-# 🚀 Enterprise-Grade AI-Powered Healthcare & E-Pharmacy Platform Built with Event-Driven Microservices Architecture
+# 🚀 Enterprise-Grade AI-Powered Healthcare & E-Pharmacy Platform ("Care Hub") Built with Event-Driven Microservices Architecture
 
 ## 📌 Overview
-Modern digital healthcare platforms face immense challenges regarding scalability, service dependency, data privacy, and intelligent clinical triage as user traffic and regulatory demands grow. Traditional monolithic healthcare applications suffer from tight coupling, single points of failure, slow deployments, and an inability to provide real-time diagnostic and prescription intelligence. 
+Modern digital healthcare ecosystems demand high availability, strict data isolation, real-time doctor-patient communication, and automated clinical assistance. Traditional monolithic healthcare platforms fail to scale under peak traffic, suffer from single points of failure, and cannot handle complex asynchronous workflows like appointment alerts, payment reconciliations, and clinical document processing.
 
-This project solves these challenges by implementing an enterprise-grade, event-driven microservices architecture within an **Nx Monorepo**, combined with **AI-powered symptom triage, medical report analysis, and automated medicine scanning**. The platform leverages **Apache Kafka** for asynchronous event streaming, **Redis** for sub-millisecond caching, and **LLMs (Google Gemini & OpenAI) alongside Tesseract OCR** to automate healthcare workflows. Designed around distributed system principles, it offers medicine e-commerce, doctor appointments, diagnostic lab tests, and AI triage in a unified, resilient ecosystem.
+**Care Hub** is an enterprise-ready healthcare and e-pharmacy platform built as an **Nx Monorepo** comprising **9 decoupled microservices** and a modern **Next.js 16 / React 19** frontend. The platform provides a full digital healthcare journey: medicine e-commerce, diagnostic lab test bookings, real-time doctor consultations via **WebRTC (Jitsi Meet)**, automated **FCM push notifications**, and clinical intelligence powered by **Groq Cloud LLM inference** and **Tesseract.js OCR**. Asynchronous inter-service workflows are managed using **Apache Kafka**, while high-security OTP lifecycles are accelerated with **Upstash Redis**.
 
 ---
 
 ## 🎯 Key Problems Solved
-* ✅ **Eliminates tight service coupling** using Apache Kafka distributed event streaming
-* ✅ **Guarantees high fault tolerance & scalability** through independently deployable microservices
-* ✅ **Optimizes database performance & latency** using Redis caching for high-traffic endpoints
-* ✅ **Ensures complete data isolation** via the database-per-service pattern (MongoDB)
-* ✅ **Centralizes security & traffic routing** through an enterprise API Gateway with rate limiting
-* ✅ **Secures authentication** using JWT tokens, refresh token rotation, and Google OAuth 2.0
-* ✅ **Implements multi-role access control (RBAC)** for Patients, Doctors, Lab Technicians, and Admins
-* ✅ **Automates medical report interpretation** via PDF parsing and clinical LLM summarization
-* ✅ **Provides AI clinical symptom triage** with condition probabilities, red flags, and triage urgency levels
-* ✅ **Digitizes physical prescriptions and medicine strips** using OCR (Tesseract.js) and AI
-* ✅ **Enables secure digital transactions** and automated webhook reconciliation via Razorpay
-* ✅ **Delivers a production-ready foundation** configured with Docker, CI/CD, and Nx Monorepo tooling
+* ✅ **Decouples Healthcare Workflows:** 9 independent microservices managed inside an Nx Monorepo eliminating single points of failure.
+* ✅ **Zero-Plugin Doctor Teleconsultations:** Browser-based, encrypted 1-on-1 video calls using Jitsi Meet (WebRTC) with dynamic room allocation.
+* ✅ **Real-Time Notification Dispatch:** Firebase Cloud Messaging (FCM) push notifications alert doctors and patients when video sessions are ready.
+* ✅ **Non-Blocking Asynchronous Operations:** Apache Kafka handles mission-critical background jobs (User Registration OTPs, Password Resets, Appointment Confirmations).
+* ✅ **Low-Latency OTP Verification:** Upstash Redis provides sub-millisecond TTL storage for signup and password-reset OTPs.
+* ✅ **Ultra-Fast Clinical AI Inference:** Groq Cloud LPU engine (`gpt-oss-120b`) delivers near-instant medical triage and diagnostic report extraction.
+* ✅ **Physical Document & Packaging Digitization:** Tesseract.js OCR extracts text from medicine packaging strips; `pdf-parse-new` digests lab PDF reports.
+* ✅ **Multi-Tier E-Commerce Catalog:** 7-level product classification (Category, SubCategory, ChildCategory, Brand, Origin, AgeGroup, Product) with inventory and Cart handling.
+* ✅ **Tamper-Proof Transactions:** Razorpay payment integration secured by server-side cryptographic HMAC SHA-256 signature verification.
+* ✅ **Role-Based Access & Security:** Centralized API Gateway with Helmet, compression, CORS, rate limiting, JWT authentication, and RBAC (`Patient`, `Doctor`, `Admin`).
 
 ---
 
-## 🏗️ System Architecture
-The application is structured into decoupled, independently deployable microservices orchestrated via an API Gateway:
+## 🏗️ System Architecture & Services Breakdown
+The platform consists of an API Gateway and 8 specialized backend microservices communicating via REST and Kafka:
 
-### 🌐 API Gateway
-**Responsible for:**
-* Centralized request routing and reverse proxying
-* Rate limiting and brute-force protection
-* Security headers enforcement (Helmet) & CORS configuration
-* Central JWT authentication and request validation
+```
+[ Next.js 16 / React 19 Client ]
+                │
+                ▼
+      [ API Gateway : 8000 ]  ── (Helmet, Rate Limiter, Reverse Proxy)
+                │
+ ┌──────────────┼──────────────┬──────────────┬──────────────┐
+ ▼              ▼              ▼              ▼              ▼
+[Auth Service] [User Service] [Product Service] [Order Service] [Payment Service]
+ │              │              │ (Catalog & Cart)             │ (Razorpay & HMAC)
+ │              │              └──────────────┬──────────────┘
+ ▼              ▼                             ▼
+[Appointment & Telehealth]             [Lab Test Service]     [AI Healthcare Service]
+ (Jitsi Meet, FCM & Kafka)              (Diagnostic Tests)     (Groq API & Tesseract OCR)
+        │                                     │                      │
+        └──────────────────┬──────────────────┴──────────────────────┘
+                           ▼
+          [ Apache Kafka (Broker) & Upstash Redis ]
+                           │
+                           ▼
+          [ MongoDB (Database-Per-Service via Mongoose) ]
+```
 
-### 🔐 Authentication Service
-**Responsible for:**
-* User registration, secure login, and session logout
-* Access & refresh token generation and rotation
-* Google OAuth 2.0 integration
-* OTP generation, storage, and password reset workflows
-* Multi-role authorization (`Patient`, `Doctor`, `Lab Technician`, `Admin`)
+### 1. 🌐 API Gateway (`Port: 8000`)
+* Central entry point reverse-proxying requests to internal microservices via `http-proxy-middleware`.
+* Secures application traffic using `helmet`, `cors`, and `compression`.
+* Implements IP-based request throttling using `express-rate-limit`.
+* Validates JWT authentication headers before routing requests to protected services.
 
-### 👤 User Service
-**Responsible for:**
-* Patient medical profile & health records management
-* Delivery address management
-* Doctor credentials, specialization, and availability setup
-* Historical consultation & test record aggregation
+### 2. 🔐 Authentication Service
+* Multi-user authentication supporting **Patients**, **Doctors**, and **Admins**.
+* JWT Token generation (Access Token + Refresh Token rotation) and verification.
+* **Google OAuth 2.0** login support via `google-auth-library`.
+* Forgot password workflow with Kafka-driven OTP generation and verification against Upstash Redis.
 
-### 💊 Product Service (Pharmacy & Inventory)
-**Responsible for:**
-* Comprehensive medicine and healthcare catalog
-* Advanced search & categorization (OTC vs. Prescription-only `rxRequired`)
-* Real-time inventory tracking and automated low-stock alerts
-* Batch, composition, side-effects, and manufacturer data management
+### 3. 👤 User Service
+* User registration with email verification via OTP (Kafka `send-mail` topic).
+* Doctor onboarding & credential registration (specialties, experience, license number, consultation fees).
+* Profile picture & document uploads to **Cloudinary**.
+* Admin management of registered doctors and patients.
 
-### 🛒 Order Service
-**Responsible for:**
-* Cart management and pricing calculations
-* Order placement and prescription upload handling
-* Multi-stage order lifecycle tracking (`Pending` → `Confirmed` → `Packed` → `Shipped` → `Delivered`)
-* Order cancellation and automated refund dispatch
+### 4. 💊 Product Service (Catalog & Cart)
+* 7-tier e-commerce product architecture:
+  * Categories & SubCategories & ChildCategories
+  * Brands & Origins & AgeGroups
+  * Products (Medicines, Wellness items, stock levels, pricing, compositions)
+* **Cart Management System:** Built directly into the service for high-performance adding, updating, and removing cart items per user.
 
-### 💳 Payment Service
-**Responsible for:**
-* Razorpay payment gateway integration (UPI, Cards, NetBanking)
-* Payment signature verification and security checks
-* Webhook ingestion for asynchronous payment events
-* Transaction audit history and digital PDF invoice generation
+### 5. 🛒 Order Service
+* Transforms cart contents into confirmed patient orders.
+* Tracks order status, delivery addresses, and user purchasing history.
+* Admin order listing with pagination and status updates.
 
-### 🩺 Appointment Service (Telehealth)
-**Responsible for:**
-* Doctor discovery by specialty, experience, language, and fees
-* Real-time slot booking and calendar schedule management
-* Consultation notes and digital prescription generation
-* Video consultation access and meeting link lifecycle
+### 6. 💳 Payment Service (Razorpay Integration)
+* Creates Razorpay orders for medicine purchases and diagnostic lab tests.
+* **Cryptographic Verification:** Validates incoming payments using Node.js `crypto` HMAC SHA-256 signatures against `RAZORPAY_SECRET_KEY`.
+* Updates order and booking payment statuses automatically upon verified signature digest.
 
-### 🧪 Lab Test Service (Diagnostics)
-**Responsible for:**
-* Diagnostic test packages & health checkup catalog
-* Home sample collection scheduling and technician assignment
-* Sample tracking (`Booked` → `Sample Collected` → `Processing` → `Completed`)
-* Digital lab report upload and secure PDF delivery
+### 7. 🩺 Appointment & Telehealth Service
+* Doctor discovery by specialization, experience, and consultation fees.
+* Slot-based appointment booking and fee payment processing.
+* **Teleconsultation Engine:** Generates secure Jitsi Meet video URLs (`Appointment_<appointmentId>`).
+* **FCM Push Engine:** Dispatches push notifications to patient/doctor devices via Firebase Admin SDK.
+* Kafka producer publishes to `appointment-email` for booking confirmation delivery via Nodemailer.
 
-### 🤖 AI Healthcare Service
-**Responsible for:**
-* AI-driven symptom analysis and emergency triage classification
-* Medical report extraction (PDF) and structured summarization
-* OCR-based medicine packaging and food safety evaluation
-* Specialist doctor and relevant lab test recommendations
+### 8. 🧪 Lab Test Service
+* Management of diagnostic lab categories and comprehensive health checkup packages.
+* Diagnostic test scheduling and home collection bookings for patients.
+* Admin controls for creating, updating, and pricing clinical tests.
 
-### 🔔 Notification & Utility Service
-**Responsible for:**
-* Transactional emails for orders, appointments, and lab test reports
-* OTP dispatch via SMS/Email (Nodemailer)
-* Cloudinary/S3 asset and prescription document hosting
-* Shared utility workflows across microservices
+### 9. 🤖 AI Healthcare Service
+* **AI Symptom Triage (`/symptoms`):** Ingests up to 5 patient symptoms and prompts Groq Cloud LLM (`gpt-oss-120b`) to return condition probabilities, clinical urgency triage levels (`Low`, `Medium`, `High`, `Emergency`), red flags, and specialist recommendations.
+* **Medical Report Analyzer (`/report`):** Parses uploaded PDF lab reports via `pdf-parse-new` and outputs structured clinical summaries, key findings, and next steps in valid JSON.
+* **Medicine & Food Scanner (`/medicine`):** Scans uploaded medicine packaging or food labels using **Tesseract.js OCR**, then prompts the LLM to output dosage instructions, uses, side effects, and precautions.
+
+---
+
+## 📹 Real-Time Doctor Video Consultation (WebRTC / Jitsi Meet)
+1. **Booking & Confirmation:** Patient books a doctor slot and completes consultation payment.
+2. **Room Generation:** Appointment Service dynamically provisions a private Jitsi Meet room:
+   $$\text{meetUrl} = \text{https://meet.jit.si/Appointment\_}\{\text{appointmentId}\}$$
+3. **FCM Notification Trigger:** The service calls `message.send()` via Firebase Admin SDK with the user's FCM token, instantly sending a device notification that the call is ready.
+4. **Browser-Based Joining:** In the Next.js client (`user-appointment`), the patient clicks the video icon, opens an interactive modal, and joins the encrypted audio/video consultation via WebRTC with no extra apps required.
 
 ---
 
 ## ⚡ Event-Driven Communication with Apache Kafka
-Instead of fragile, synchronous HTTP communication between services, **Apache Kafka** acts as the central event-streaming backbone:
+The platform utilizes **KafkaJS** to decouple asynchronous notifications from critical business operations:
 
-### 1. Medicine Order & Payment Workflow
-1. Patient places an order with required prescription.
-2. Order Service validates stock and publishes an `ORDER_CREATED` event.
-3. Payment Service creates Razorpay transaction; patient completes checkout.
-4. Payment webhook verifies signature and publishes `PAYMENT_SUCCESS`.
-5. Order Service consumes `PAYMENT_SUCCESS` and transitions status to `CONFIRMED`.
-6. Product Service consumes the event and decrements inventory automatically.
-7. Notification Service triggers order confirmation email and SMS to the patient.
-
-### 2. Doctor Appointment Workflow
-1. Patient selects a slot and books a doctor consultation.
-2. Appointment Service locks the slot and publishes `APPOINTMENT_BOOKED`.
-3. Payment Service verifies the consultation fee.
-4. Notification Service delivers confirmation with meeting link to both Doctor and Patient.
-5. Completed appointment triggers `CONSULTATION_COMPLETED` for health record update.
-
-### 3. Lab Test & Sample Collection Workflow
-1. Patient books a home collection health panel.
-2. Lab Service creates booking and publishes `LAB_BOOKING_CREATED`.
-3. Lab technician collects sample and updates status to `SAMPLE_PROCESSING`.
-4. Once the lab uploads the result, a `LAB_REPORT_READY` event fires.
-5. AI Service automatically summarizes the PDF report for patient clarity.
-6. Notification Service dispatches the report download link to the user.
+| Kafka Topic | Producer Service | Consumer Service | Workflow Description |
+| :--- | :--- | :--- | :--- |
+| **`send-mail`** | `user-service` | `user-service` (Consumer) | Emits OTP upon patient signup; consumer sends verification email via Nodemailer. |
+| **`reset-password`** | `auth-service` | `auth-service` (Consumer) | Emits password-reset OTP for patients; consumer sends email with HTML template. |
+| **`reset-password-doctor`** | `auth-service` | `auth-service` (Consumer) | Emits password-reset OTP for doctors; consumer sends secure reset token email. |
+| **`appointment-email`** | `appointment-service` | `appointment-service` (Consumer) | Fires after successful appointment payment; consumer dispatches appointment confirmation email with doctor details and date/time. |
 
 ---
 
-## 🤖 AI-Powered Clinical Intelligence & Document Processing
-The platform integrates **Google Gemini API**, **OpenAI**, and **Tesseract.js OCR** to provide intelligent clinical triage and document digitization:
-
-### 1. AI Symptom Triage & Analysis
-* Analyzes multi-symptom patient inputs
-* Calculates probable medical conditions with confidence ratings (High / Medium / Low)
-* Assigns clinical triage urgency levels: `Low`, `Medium`, `High`, or `Emergency`
-* Identifies clinical red flags and critical warning signs
-* Recommends relevant medical specialists (e.g., Cardiologist, Pulmonologist)
-* Provides safe home-care guidance with professional medical disclaimers
-
-### 2. Medical Report Summarization (PDF)
-* Extracts textual data from lab and diagnostic PDF reports using `pdf-parse-new`
-* Validates whether the uploaded file is a legitimate clinical document
-* Summarizes complex medical reports into concise, patient-friendly key findings
-* Generates actionable follow-up questions for the patient’s next doctor visit
-
-### 3. OCR Medicine & Food Scanner
-* Processes medicine box/strip images using Tesseract OCR
-* Identifies medicine brand, generic composition, primary uses, and precautions
-* Flags potential side effects and contraindications
-* Analyzes food packaging labels to evaluate nutritional health scores
-
----
-
-## 🚀 High Performance with Redis
-**Redis / Upstash** serves as the in-memory caching and session state layer to guarantee low latency:
-
-### Cached Data:
-* Frequently queried medicine catalogs and category filters
-* Active doctor availability schedules and slot bookings
-* High-volume diagnostic test packages
-* Rate-limiting counters and API request quotas
-* OTPs with TTL for secure, fast verification
-* High-frequency AI triage and condition recommendations
-
-### Performance Benefits:
-* **80%+ reduction** in redundant database queries
-* **Sub-15ms response times** for cached search and catalog queries
-* **Zero race conditions** on concurrent doctor slot reservations
-* **High throughput** under intense e-commerce and booking traffic
+## 🚀 Caching & In-Memory Storage with Upstash Redis
+* **Serverless Redis Client (`@upstash/redis`):** Connects to Upstash via low-latency REST tokens without requiring long-lived socket management.
+* **OTP Verification Lifecycles:** Stores generated 6-digit OTPs with strict TTL (Time-To-Live expiration), guaranteeing security against replay attacks during registration and password recovery.
+* **High Efficiency:** Offloads verification state from MongoDB, ensuring lightning-fast authentication verification under heavy load.
 
 ---
 
 ## 🧠 Artificial Intelligence Workflow
-1. Patient enters symptoms or uploads a prescription/lab report (PDF or Image).
-2. API Gateway validates JWT authentication and routes request to AI Service.
-3. If an image or PDF is supplied, **Tesseract OCR** or **PDF-Parse** extracts raw text.
-4. AI Service structures the prompt with clinical domain rules and constraints.
-5. **OpenAI / Gemini LLM** evaluates the input and responds with strict JSON schema.
-6. The system categorizes clinical urgency, generates condition hypotheses, and flags red flags.
-7. Relevant doctor specialties and recommended diagnostic panels are mapped.
-8. Parsed result is cached in Redis and returned in structured JSON to the frontend.
+```
+[ Patient Upload / Input ] 
+       │
+       ├─► Text Symptoms ────────────► Groq Cloud LLM (gpt-oss-120b)
+       ├─► Medical Report (PDF) ─────► pdf-parse-new ──► Groq Cloud LLM
+       └─► Medicine Box (Image) ────► Tesseract OCR ──► Groq Cloud LLM
+                                                              │
+                                                              ▼
+                                            [ Validated JSON Response ]
+                                            • Probable Conditions & Urgency
+                                            • Medicine Uses & Side Effects
+                                            • Recommended Doctor Specialist
+```
+1. **Input Submission:** Patient inputs up to 5 symptoms or uploads an image/PDF file.
+2. **Document/Image Extraction:**
+   * Images are processed through `Tesseract.recognize(buffer, "eng")` to extract medicine/food text.
+   * PDFs are parsed into raw strings via `pdf-parse-new`.
+3. **Structured Prompting:** AI Service sends a strict JSON-enforced prompt to Groq Cloud API (`baseURL: "https://api.groq.com/openai/v1"`).
+4. **Clinical Triage Generation:** The model returns valid JSON containing condition likelihoods, emergency warnings, specialist suggestions, and safety disclaimers.
 
 ---
 
 ## 🛠️ Technology Stack
 
-### Frontend
-* **Framework:** React 19 / Next.js 16
-* **Language:** TypeScript
-* **State Management:** Redux Toolkit, Zustand
-* **UI & Styling:** Tailwind CSS, Material UI (MUI), Lucide Icons
-* **Forms & Validation:** React Hook Form, Zod
+### Frontend Application
+* **Framework:** Next.js 16 (App Router), React 19, TypeScript
+* **UI Components:** Tailwind CSS, Material UI (`@mui/material`, `@mui/x-data-grid`, `@mui/icons-material`)
+* **State Management:** Redux Toolkit (`@reduxjs/toolkit`, `react-redux`)
+* **Icons & Media:** Lucide React, React Icons (`react-icons`)
+* **HTTP Client:** Axios with custom interceptors and error handlers
 
-### Backend & Microservices
-* **Runtime:** Node.js (v20+)
-* **Framework:** Express.js, TypeScript
-* **Architecture:** Microservices with Nx Monorepo
-* **API Documentation:** Swagger / OpenAPI
+### Microservices Backend
+* **Runtime:** Node.js (v20+), Express.js, TypeScript
+* **Monorepo Tooling:** Nx Workspace (`@nx/express`, `@nx/next`, `@nx/node`)
+* **API Documentation:** Swagger UI Express (`swagger-ui-express`, `swagger-jsdoc`)
+* **Security & Middleware:** Helmet, CORS, Compression, Morgan, Express Rate Limit
+
+### Real-Time Video & Telehealth
+* **Video Protocol:** WebRTC via Jitsi Meet API (`meet.jit.si`)
+* **Push Notifications:** Firebase Cloud Messaging (FCM) & Firebase Admin SDK (`firebase-admin`)
 
 ### Databases & In-Memory Layer
 * **Primary Database:** MongoDB with Mongoose (Database-Per-Service pattern)
-* **Caching & Sessions:** Redis / Upstash Redis
+* **In-Memory Caching:** Upstash Redis (`@upstash/redis`)
 
-### Event Streaming & Message Broker
-* **Event Streaming:** Apache Kafka (`kafkajs`)
-* **Architecture:** Asynchronous Event-Driven Pub/Sub
+### Event Streaming & Notifications
+* **Message Broker:** Apache Kafka (`kafkajs`)
+* **Email Engine:** Nodemailer (Gmail SMTP with HTML templates)
 
-### AI & Computer Vision
-* **LLM Engines:** Google Gemini API (`@google/genai`), OpenAI API
-* **OCR & Extraction:** Tesseract.js, `pdf-parse-new`
-* **Features:** Symptom Triage, Medical Report Analysis, Medicine Scanner
+### AI, OCR & Document Processing
+* **LLM Engine:** Groq Cloud API (`openai/gpt-oss-120b`) via OpenAI SDK
+* **Computer Vision & OCR:** Tesseract.js (English language engine)
+* **Document Parser:** `pdf-parse-new`
 
-### Storage, Media & Payments
-* **Payment Gateway:** Razorpay SDK (Orders, Verification, Webhooks)
-* **Cloud Storage:** Cloudinary (Prescription & Document hosting)
-* **Email & Auth:** Nodemailer, Firebase Auth, Google Auth Library
+### Payments, Storage & Cloud
+* **Payment Gateway:** Razorpay SDK with Node.js crypto HMAC SHA-256 verification
+* **Cloud Asset Storage:** Cloudinary (`cloudinary`, `multer`)
+* **Authentication:** Google Auth Library (`google-auth-library`), JWT (`jsonwebtoken`), bcrypt
 
-### Security
-* **Authentication:** JWT (Access & Refresh tokens), bcrypt hashing
-* **Protection:** Helmet, CORS, Express Rate Limiter, Role-Based Access Control (RBAC)
-
-### DevOps & Engineering
-* **Monorepo Engine:** Nx Workspace
-* **Containers:** Docker, Docker Compose
-* **Version Control & CI/CD:** Git, GitHub Actions
+### DevOps & Infrastructure
+* **Containerization:** Docker, Docker Compose (Kafka broker, MongoDB, Mongo-Express)
+* **CI/CD:** GitHub Actions (`ci.yml`, `cd.yml`)
 
 ---
 
 ## 🌟 Advanced Features
-* **Nx Monorepo Management:** Shared libraries, centralized configurations, and isolated service builds.
-* **Database-Per-Service Isolation:** Independent MongoDB instances per microservice preventing cross-database locking.
-* **Asynchronous Order Lifecycle:** Non-blocking order and payment processing via Kafka events.
-* **Intelligent Clinical Triage:** Emergency-aware symptom triage system with structured specialist mapping.
-* **Prescription & Report OCR:** Automated text extraction from physical medical files and prescriptions.
-* **Real-time Telehealth Booking:** Doctor slot scheduling and automated video consultation URL generation.
-* **Diagnostic Test Home Collection:** End-to-end sample tracking from doorstep pickup to report generation.
+* **Nx Monorepo Architecture:** Centralized multi-package management allowing shared linting, build pipelines, and separate service containers.
+* **Integrated Teleconsultation:** Instant virtual appointments using Jitsi Meet and Firebase FCM push alerts without external plugins.
+* **Dual OCR & LLM AI Pipeline:** Combines Tesseract OCR and Groq-accelerated LLMs to analyze medicine packaging and medical lab PDFs.
+* **Cryptographically Verified Payments:** Server-side HMAC SHA-256 signature verification for payments across orders, appointments, and diagnostic tests.
+* **Comprehensive Admin Portal:** Dedicated Next.js dashboard featuring Material UI DataGrids to manage users, doctors, appointments, orders, and 7-tier product categories.
 
 ---
 
 ## 🎯 What This Project Demonstrates
-* **Distributed System Engineering:** Decoupled, production-ready microservices communicating via events.
-* **Event-Driven Architecture:** Asynchronous event streaming using Apache Kafka for high-throughput workflows.
-* **Modern Monorepo Tooling:** Enterprise repository management using Nx Workspace.
-* **Production Caching Patterns:** Multi-layer caching and session handling using Redis.
-* **Applied Generative AI & OCR:** Real-world LLM and Computer Vision integration for healthcare triage and document parsing.
-* **Payment Gateway Integration:** Razorpay payment orders, signature verification, and automated webhook handlers.
-* **Enterprise Security Standards:** Centralized API Gateway, JWT rotation, and granular RBAC.
+* **Real-World Microservices Engineering:** Practical implementation of decoupled services communicating through an API Gateway and Kafka event streaming.
+* **Modern Full-Stack Proficiency:** Building scalable, type-safe interfaces using **Next.js 16, React 19, and TypeScript**.
+* **Real-Time Telehealth Integration:** Practical WebRTC video calling integration and FCM push messaging.
+* **Applied Generative AI & Computer Vision:** Real-world document parsing using Groq LPU inference, Tesseract OCR, and PDF parsing.
+* **Enterprise Security Standards:** Rate limiting, JWT rotation, Google OAuth 2.0, RBAC, and cryptographic payment verification.
 
 ---
 
 ## 🔥 Why This Project Stands Out
-Unlike standard monolithic healthcare or e-commerce CRUD apps, this project reflects real-world enterprise engineering:
-
-* **Solves true distributed systems challenges:** Eliminates single points of failure by decoupling auth, orders, payments, doctors, lab tests, and AI into dedicated services.
-* **High-demand modern stack:** Combines **Node.js, TypeScript, Kafka, Redis, MongoDB, React 19, and Nx Monorepo** in one cohesive architecture.
-* **Clinical Value with AI:** Rather than a simple chatbot, it uses **OCR + LLMs** to extract structured medical information from prescriptions and lab PDFs with strict clinical safety disclaimers.
-* **Production-Oriented Code:** Includes containerized deployment with Docker, centralized API Gateway security, and automated CI/CD pipelines.
+Unlike standard CRUD applications, **Care Hub** is an end-to-end distributed system that mirrors modern production architectures like Practo or Apollo 24|7:
+* It integrates **E-Commerce (7-Tier Catalog + Cart)**, **Telehealth (WebRTC Video Calls)**, and **Diagnostic Lab Bookings** in one platform.
+* It leverages **Apache Kafka** for resilient event-driven background processing and **Upstash Redis** for fast, stateless OTP management.
+* It applies **Groq AI & Tesseract OCR** to real medical use cases (symptom triage, lab report summarization, medicine strip analysis) with built-in safety boundaries.
+* It is engineered with **production discipline** — Dockerized services, Nx build caching, Swagger API docs, and automated GitHub Actions CI/CD workflows.
